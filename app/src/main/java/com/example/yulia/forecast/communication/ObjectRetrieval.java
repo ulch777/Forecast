@@ -26,16 +26,9 @@ public abstract class ObjectRetrieval<T> implements Response.Listener<String>, R
     public void onResponse(String response) {
         AppLogger.LogCut(TAG, "onResponse: " + response);
         try {
-            JSONObject jsonResponse = new JSONObject(response);
-//            if (jsonResponse.getBoolean(ServerKeys.SUCCESS_TAG)) {
-//                String obj = jsonResponse.getString(ServerKeys.DATA_TAG);
-//                JsonReader reader = new JsonReader(new StringReader(obj));
             JsonReader reader = new JsonReader(new StringReader(response));
             reader.setLenient(true);
             objectRetrieverListener.receivedObject((T) new Gson().fromJson(reader, tClass));
-//            } else {
-//                objectRetrieverListener.error(jsonResponse.getInt(ServerKeys.ERROR_TAG));
-//            }
         } catch (Exception e) {
             AppLogger.LogCut(TAG, "onResponse Exception: " + e);
             objectRetrieverListener.exception(e.getMessage());

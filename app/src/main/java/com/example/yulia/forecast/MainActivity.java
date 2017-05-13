@@ -1,24 +1,36 @@
 package com.example.yulia.forecast;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.yulia.forecast.communication.MyVolley;
 import com.example.yulia.forecast.communication.ObjectRetrieverListener;
 import com.example.yulia.forecast.communication.VolleyClient;
 import com.example.yulia.forecast.model.Forecast;
 import com.example.yulia.forecast.utils.AppLogger;
+import com.example.yulia.forecast.utils.Utils;
 
 import java.net.URL;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TEMP = "temp";
@@ -27,6 +39,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String MAIN = "main";
     private static final String CITY = "city";
     private static final String ICON = "icon";
+    private static final String DEFAULT_CITY = "Dnipropetrovsk";
+    private static final String DEGREES_SIGN = "\u00b0";
+    private static final String ICON_URL = "http://openweathermap.org/img/w/";
+    private static final String ICON_EXT = ".png";
 
     private ImageView imvIcon;
     private TextView tvCity;
@@ -34,27 +50,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvTempMax;
     private TextView tvTempMin;
     private TextView tvMain;
+    private String cityName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
-        imvIcon = (ImageView) findViewById(R.id.imvIcon);
-        tvCity = (TextView) findViewById(R.id.tvCity);
-        tvTemp = (TextView) findViewById(R.id.tvTemp);
-        tvTempMax = (TextView) findViewById(R.id.tvTempMax);
-        tvTempMin = (TextView) findViewById(R.id.tvTempMin);
-        tvMain = (TextView) findViewById(R.id.tvMain);
-        if (savedInstanceState != null) {
-            tvCity.setText(savedInstanceState.getString(CITY));
-            tvTemp.setText(savedInstanceState.getString(TEMP));
-            tvTempMax.setText(savedInstanceState.getString(TEMP_MAX));
-            tvTempMin.setText(savedInstanceState.getString(TEMP_MIN));
-            tvMain.setText(savedInstanceState.getString(MAIN));
-            imvIcon.setImageBitmap((Bitmap) savedInstanceState.getParcelable(ICON));
-        } else
-            VolleyClient.getInstance().getForecast("Dnipropetrovsk", getForecastListener);
+        init(savedInstanceState);
+
     }
 
     @Override
@@ -77,18 +80,59 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
-            case R.id.action_dnipro :
-                VolleyClient.getInstance().getForecast(getResources().getString(R.string.action_dnipro), getForecastListener);
+        switch (item.getItemId()) {
+            case R.id.action_dnipro:
+                cityName = getResources().getString(R.string.action_dnipro);
                 break;
-            case R.id.action_zaporizhzhya :
-                VolleyClient.getInstance().getForecast(getResources().getString(R.string.action_zaporizhzhya), getForecastListener);
+            case R.id.action_zaporizhzhya:
+                cityName = getResources().getString(R.string.action_zaporizhzhya);
                 break;
-            case R.id.action_kharkiv :
-                VolleyClient.getInstance().getForecast(getResources().getString(R.string.action_kharkiv), getForecastListener);
+            case R.id.action_kharkiv:
+                cityName = getResources().getString(R.string.action_kharkiv);
                 break;
         }
+        getForecast(cityName);
         return super.onOptionsItemSelected(item);
+    }
+
+    private void init(Bundle args) {
+        MyVolley.init(this);
+        imvIcon = (ImageView) findViewById(R.id.imvIcon);
+        tvCity = (TextView) findViewById(R.id.tvCity);
+        tvTemp = (TextView) findViewById(R.id.tvTemp);
+        tvTempMax = (TextView) findViewById(R.id.tvTempMax);
+        tvTempMin = (TextView) findViewById(R.id.tvTempMin);
+        tvMain = (TextView) findViewById(R.id.tvMain);
+        if (args != null) {
+            tvCity.setText(args.getString(CITY));
+            tvTemp.setText(args.getString(TEMP));
+            tvTempMax.setText(args.getString(TEMP_MAX));
+            tvTempMin.setText(args.getString(TEMP_MIN));
+            tvMain.setText(args.getString(MAIN));
+            imvIcon.setImageBitmap((Bitmap) args.getParcelable(ICON));
+            cityName = args.getString(CITY);
+        } else {
+            cityName = DEFAULT_CITY;
+            getForecast(cityName);
+        }
+        final Timer timer = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                getForecast(cityName);
+            }
+        };
+        timer.schedule(timerTask, 30 * 60* 1000, 30 * 60 * 1000);
+    }
+
+    private void getForecast(String city) {
+        if (Utils.isConnected(this)) {
+            if (!TextUtils.isEmpty(city)) {
+                VolleyClient.getInstance().getForecast(city, getForecastListener);
+            }
+        } else
+            Toast.makeText(MainActivity.this, "No internet connection", Toast.LENGTH_SHORT).show();
+
     }
 
     ObjectRetrieverListener<Forecast> getForecastListener = new ObjectRetrieverListener<Forecast>() {
@@ -100,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
             tvTempMax.setText(getStringTemp(object.getMain().getTemp_max()));
             tvTempMin.setText(getStringTemp(object.getMain().getTemp_min()));
             tvMain.setText(object.getWeather()[0].getMain());
-            String iconURL = "http://openweathermap.org/img/w/" + object.getWeather()[0].getIcon() + ".png";
+            String iconURL = ICON_URL + object.getWeather()[0].getIcon() + ICON_EXT;
             DownloadImageTask downloadImageTask = new DownloadImageTask();
             downloadImageTask.execute(iconURL);
         }
@@ -112,17 +156,17 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void exception(String e) {
-            AppLogger.LogCut(e.toString());
+            AppLogger.LogCut(e);
         }
     };
 
     private String getStringTemp(String temp) {
-        String t = "";
+        String t;
         int tmp = (int) Double.parseDouble(temp);
         if (tmp > 0) {
-            t += "+" + tmp;
-        } else t = tmp + "";
-        return t += "\u00b0";
+            t = "+" + tmp + DEGREES_SIGN;
+        } else t = tmp + DEGREES_SIGN;
+        return t;
 
     }
 
@@ -140,7 +184,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(Bitmap result) {
-
             imvIcon.setImageBitmap(result);
         }
     }
