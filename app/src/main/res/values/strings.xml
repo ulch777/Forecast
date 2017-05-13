@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Forecast</string>
+
+    <string name="action_dnipro">Dnipropetrovsk</string>
+    <string name="action_zaporizhzhya">Zaporizhzhya</string>
+    <string name="action_kharkiv">Kharkiv</string>
+
+</resources>
