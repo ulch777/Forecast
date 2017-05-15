@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 getForecast(cityName);
             }
         };
-        timer.schedule(timerTask, 30 * 60* 1000, 30 * 60 * 1000);
+        timer.schedule(timerTask, 30 * 60 * 1000, 30 * 60 * 1000);
     }
 
     private void getForecast(String city) {
@@ -132,6 +132,16 @@ public class MainActivity extends AppCompatActivity {
             }
         } else
             Toast.makeText(MainActivity.this, "No internet connection", Toast.LENGTH_SHORT).show();
+
+    }
+
+    private String getStringTemp(String temp) {
+        String t;
+        int tmp = (int) Double.parseDouble(temp);
+        if (tmp > 0) {
+            t = "+" + tmp + DEGREES_SIGN;
+        } else t = tmp + DEGREES_SIGN;
+        return t;
 
     }
 
@@ -159,16 +169,6 @@ public class MainActivity extends AppCompatActivity {
             AppLogger.LogCut(e);
         }
     };
-
-    private String getStringTemp(String temp) {
-        String t;
-        int tmp = (int) Double.parseDouble(temp);
-        if (tmp > 0) {
-            t = "+" + tmp + DEGREES_SIGN;
-        } else t = tmp + DEGREES_SIGN;
-        return t;
-
-    }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
 
