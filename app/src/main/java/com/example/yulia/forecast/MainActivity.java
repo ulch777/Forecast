@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String DEGREES_SIGN = "\u00b0";
     private static final String ICON_URL = "http://openweathermap.org/img/w/";
     private static final String ICON_EXT = ".png";
+    private static final long UPDATE_TIME = 30*60*1000;
+
 
     private ImageView imvIcon;
     private TextView tvCity;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvTempMin;
     private TextView tvMain;
     private String cityName;
+    private Timer mTimer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,14 +118,14 @@ public class MainActivity extends AppCompatActivity {
             cityName = DEFAULT_CITY;
             getForecast(cityName);
         }
-        final Timer timer = new Timer();
+        mTimer = new Timer();
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
                 getForecast(cityName);
             }
         };
-        timer.schedule(timerTask, 30 * 60 * 1000, 30 * 60 * 1000);
+        mTimer.schedule(timerTask, UPDATE_TIME , UPDATE_TIME);
     }
 
     private void getForecast(String city) {
@@ -169,6 +172,12 @@ public class MainActivity extends AppCompatActivity {
             AppLogger.LogCut(e);
         }
     };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mTimer.cancel();
+    }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
 
